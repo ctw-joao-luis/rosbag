@@ -1,4 +1,4 @@
-import { compare, add as addTime } from "@foxglove/rostime";
+import { compare, add as addTime } from "@lichtblick/rostime";
 import Heap from "heap";
 
 import { BaseIterator } from "./BaseIterator";
@@ -6,7 +6,7 @@ import { ChunkInfo } from "./record";
 import { IteratorConstructorArgs, ChunkReadResult } from "./types";
 
 export class ForwardIterator extends BaseIterator {
-  private remainingChunkInfos: (ChunkInfo | undefined)[];
+  #remainingChunkInfos: (ChunkInfo | undefined)[];
 
   constructor(args: IteratorConstructorArgs) {
     // Sort by smallest timestamp first
@@ -30,27 +30,27 @@ export class ForwardIterator extends BaseIterator {
       chunkInfoHeap.insert(info);
     }
 
-    this.remainingChunkInfos = [];
+    this.#remainingChunkInfos = [];
     while (chunkInfoHeap.size() > 0) {
-      this.remainingChunkInfos.push(chunkInfoHeap.pop());
+      this.#remainingChunkInfos.push(chunkInfoHeap.pop());
     }
   }
 
   protected override async loadNext(): Promise<boolean> {
     const stamp = this.position;
 
-    const firstChunkInfo = this.remainingChunkInfos[0];
+    const firstChunkInfo = this.#remainingChunkInfos[0];
     if (!firstChunkInfo) {
       return false;
     }
 
-    this.remainingChunkInfos[0] = undefined;
+    this.#remainingChunkInfos[0] = undefined;
 
     let end = firstChunkInfo.endTime;
     const chunksToLoad: ChunkInfo[] = [firstChunkInfo];
 
-    for (let idx = 1; idx < this.remainingChunkInfos.length; ++idx) {
-      const nextChunkInfo = this.remainingChunkInfos[idx];
+    for (let idx = 1; idx < this.#remainingChunkInfos.length; ++idx) {
+      const nextChunkInfo = this.#remainingChunkInfos[idx];
       if (!nextChunkInfo) {
         continue;
       }
@@ -67,12 +67,12 @@ export class ForwardIterator extends BaseIterator {
       // Remove it from the remainingChunkInfos.
       const endCompare = compare(nextChunkInfo.endTime, end);
       if (endCompare <= 0) {
-        this.remainingChunkInfos[idx] = undefined;
+        this.#remainingChunkInfos[idx] = undefined;
       }
     }
 
     // filter out undefined chunk infos
-    this.remainingChunkInfos = this.remainingChunkInfos.filter(Boolean);
+    this.#remainingChunkInfos = this.#remainingChunkInfos.filter(Boolean);
 
     // End of file or no more candidates
     if (chunksToLoad.length === 0) {

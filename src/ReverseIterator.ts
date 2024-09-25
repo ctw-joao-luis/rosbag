@@ -1,4 +1,4 @@
-import { compare, subtract as subTime } from "@foxglove/rostime";
+import { compare, subtract as subTime } from "@lichtblick/rostime";
 import Heap from "heap";
 
 import { BaseIterator } from "./BaseIterator";
@@ -6,7 +6,7 @@ import { ChunkInfo } from "./record";
 import { ChunkReadResult, IteratorConstructorArgs } from "./types";
 
 export class ReverseIterator extends BaseIterator {
-  private remainingChunkInfos: (ChunkInfo | undefined)[];
+  #remainingChunkInfos: (ChunkInfo | undefined)[];
 
   constructor(args: IteratorConstructorArgs) {
     // Sort by largest timestamp first
@@ -30,27 +30,27 @@ export class ReverseIterator extends BaseIterator {
       chunkInfoHeap.insert(info);
     }
 
-    this.remainingChunkInfos = [];
+    this.#remainingChunkInfos = [];
     while (chunkInfoHeap.size() > 0) {
-      this.remainingChunkInfos.push(chunkInfoHeap.pop());
+      this.#remainingChunkInfos.push(chunkInfoHeap.pop());
     }
   }
 
   protected override async loadNext(): Promise<boolean> {
     const stamp = this.position;
 
-    const firstChunkInfo = this.remainingChunkInfos[0];
+    const firstChunkInfo = this.#remainingChunkInfos[0];
     if (!firstChunkInfo) {
       return false;
     }
 
-    this.remainingChunkInfos[0] = undefined;
+    this.#remainingChunkInfos[0] = undefined;
 
     let start = firstChunkInfo.startTime;
     const chunksToLoad: ChunkInfo[] = [firstChunkInfo];
 
-    for (let idx = 1; idx < this.remainingChunkInfos.length; ++idx) {
-      const nextChunkInfo = this.remainingChunkInfos[idx];
+    for (let idx = 1; idx < this.#remainingChunkInfos.length; ++idx) {
+      const nextChunkInfo = this.#remainingChunkInfos[idx];
       if (!nextChunkInfo) {
         continue;
       }
@@ -66,12 +66,12 @@ export class ReverseIterator extends BaseIterator {
       // If the chunk starts after or at the start time, we have fully consumed it
       const startCompare = compare(nextChunkInfo.startTime, start);
       if (startCompare >= 0) {
-        this.remainingChunkInfos[idx] = undefined;
+        this.#remainingChunkInfos[idx] = undefined;
       }
     }
 
     // filter out undefined chunk infos
-    this.remainingChunkInfos = this.remainingChunkInfos.filter(Boolean);
+    this.#remainingChunkInfos = this.#remainingChunkInfos.filter(Boolean);
 
     // End of file or no more candidates
     if (chunksToLoad.length === 0) {

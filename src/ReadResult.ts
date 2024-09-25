@@ -5,7 +5,7 @@
 // found in the LICENSE file in the root directory of this source tree.
 // You may not use this file except in compliance with the License.
 
-import { Time } from "@foxglove/rostime";
+import { Time } from "@lichtblick/rostime";
 
 // represents a result passed to the callback from the high-level call:
 // bag.readMessages({ opts: any }, callback: (ReadResult) => void) => Promise<void>
@@ -24,7 +24,7 @@ export default class ReadResult<T> {
     data: Uint8Array,
     chunkOffset: number,
     totalChunks: number,
-    // eslint-disable-next-line @foxglove/no-boolean-parameters
+    // eslint-disable-next-line @lichtblick/no-boolean-parameters
     freeze?: boolean,
   ) {
     // string: the topic the message was on

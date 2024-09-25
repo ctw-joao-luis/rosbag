@@ -5,7 +5,7 @@
 // found in the LICENSE file in the root directory of this source tree.
 // You may not use this file except in compliance with the License.
 
-import { compare, isGreaterThan, Time } from "@foxglove/rostime";
+import { compare, isGreaterThan, Time } from "@lichtblick/rostime";
 
 import { extractFields } from "./fields";
 import nmerge from "./nmerge";
@@ -23,16 +23,16 @@ const HEADER_OFFSET = 13;
 // can be useful to use directly for efficiently accessing raw pieces from
 // within the bag
 export default class BagReader {
-  private _lastReadResult?: ChunkReadResult;
-  private _file: Filelike;
-  private _lastChunkInfo?: ChunkInfo;
+  #lastReadResult?: ChunkReadResult;
+  #file: Filelike;
+  #lastChunkInfo?: ChunkInfo;
 
   constructor(filelike: Filelike) {
-    this._file = filelike;
+    this.#file = filelike;
   }
 
   async verifyBagHeader(): Promise<void> {
-    const buffer = await this._file.read(0, HEADER_OFFSET);
+    const buffer = await this.#file.read(0, HEADER_OFFSET);
     const magic = new TextDecoder().decode(buffer);
     if (magic !== "#ROSBAG V2.0\n") {
       throw new Error("Cannot identify bag format.");
@@ -44,7 +44,7 @@ export default class BagReader {
   // because you need the header information to call readConnectionsAndChunkInfo
   async readHeader(): Promise<BagHeader> {
     await this.verifyBagHeader();
-    const buffer = await this._file.read(HEADER_OFFSET, HEADER_READAHEAD);
+    const buffer = await this.#file.read(HEADER_OFFSET, HEADER_READAHEAD);
     const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 
     const read = buffer.length;
@@ -68,7 +68,7 @@ export default class BagReader {
     connectionCount: number,
     chunkCount: number,
   ): Promise<{ connections: Connection[]; chunkInfos: ChunkInfo[] }> {
-    const buffer = await this._file.read(fileOffset, this._file.size() - fileOffset);
+    const buffer = await this.#file.read(fileOffset, this.#file.size() - fileOffset);
 
     if (connectionCount === 0) {
       return { connections: [], chunkInfos: [] };
@@ -103,9 +103,12 @@ export default class BagReader {
     endTime: Time,
     decompress: Decompress,
   ): Promise<MessageData[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const start = startTime ?? { sec: 0, nsec: 0 };
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const end = endTime ?? { sec: Number.MAX_VALUE, nsec: Number.MAX_VALUE };
     const conns =
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       connections ??
       chunkInfo.connections.map((connection) => {
         return connection.conn;
@@ -133,6 +136,7 @@ export default class BagReader {
     while (item.done !== true) {
       const { value } = item;
       item = iter.next();
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (value == null || isGreaterThan(start, value.time)) {
         continue;
       }
@@ -158,17 +162,17 @@ export default class BagReader {
     // if we're reading the same chunk a second time return the cached version
     // to avoid doing decompression on the same chunk multiple times which is
     // expensive
-    if (chunkInfo === this._lastChunkInfo && this._lastReadResult != null) {
-      return this._lastReadResult;
+    if (chunkInfo === this.#lastChunkInfo && this.#lastReadResult != null) {
+      return this.#lastReadResult;
     }
     const { nextChunk } = chunkInfo;
 
     const readLength =
       nextChunk != null
         ? nextChunk.chunkPosition - chunkInfo.chunkPosition
-        : this._file.size() - chunkInfo.chunkPosition;
+        : this.#file.size() - chunkInfo.chunkPosition;
 
-    const buffer = await this._file.read(chunkInfo.chunkPosition, readLength);
+    const buffer = await this.#file.read(chunkInfo.chunkPosition, readLength);
 
     const chunk = this.readRecordFromBuffer(buffer, chunkInfo.chunkPosition, Chunk);
     const { compression } = chunk;
@@ -187,9 +191,9 @@ export default class BagReader {
       IndexData,
     );
 
-    this._lastChunkInfo = chunkInfo;
-    this._lastReadResult = { chunk, indices };
-    return this._lastReadResult;
+    this.#lastChunkInfo = chunkInfo;
+    this.#lastReadResult = { chunk, indices };
+    return this.#lastReadResult;
   }
 
   // reads count records from a buffer starting at fileOffset

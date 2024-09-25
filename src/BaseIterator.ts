@@ -1,4 +1,4 @@
-import type { Time } from "@foxglove/rostime";
+import type { Time } from "@lichtblick/rostime";
 import Heap from "heap";
 
 import { IBagReader } from "./IBagReader";
@@ -14,8 +14,8 @@ import type {
 type HeapItem = { time: Time; offset: number; chunkReadResult: ChunkReadResult };
 
 export abstract class BaseIterator implements MessageIterator {
-  private connections: Map<number, Connection>;
-  private parse?: IteratorConstructorArgs["parse"];
+  #connections: Map<number, Connection>;
+  #parse?: IteratorConstructorArgs["parse"];
 
   protected connectionIds?: Set<number>;
   protected reader: IBagReader;
@@ -26,14 +26,14 @@ export abstract class BaseIterator implements MessageIterator {
   protected cachedChunkReadResults = new Map<number, ChunkReadResult>();
 
   constructor(args: IteratorConstructorArgs, compare: (a: HeapItem, b: HeapItem) => number) {
-    this.connections = args.connections;
+    this.#connections = args.connections;
     this.reader = args.reader;
     this.position = args.position;
     this.decompress = args.decompress;
     this.reader = args.reader;
     this.chunkInfos = args.chunkInfos;
     this.heap = new Heap(compare);
-    this.parse = args.parse;
+    this.#parse = args.parse;
 
     // if we want to filter by topic, make a list of connection ids to allow
     if (args.topics) {
@@ -65,6 +65,7 @@ export abstract class BaseIterator implements MessageIterator {
    * @returns An AsyncIterator of MessageEvents
    */
   async *[Symbol.asyncIterator](): AsyncIterator<MessageEvent> {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     while (true) {
       // Keep on reading chunks into the heap until no more chunk can be loaded (EOF)
       while (!this.heap.front()) {
@@ -86,7 +87,7 @@ export abstract class BaseIterator implements MessageIterator {
         MessageData,
       );
 
-      const connection = this.connections.get(messageData.conn);
+      const connection = this.#connections.get(messageData.conn);
       if (!connection) {
         throw new Error(`Unable to find connection with id ${messageData.conn}`);
       }
@@ -102,7 +103,7 @@ export abstract class BaseIterator implements MessageIterator {
         connectionId: messageData.conn,
         timestamp: time,
         data,
-        message: this.parse?.(data, connection),
+        message: this.#parse?.(data, connection),
       };
 
       yield event;

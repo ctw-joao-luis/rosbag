@@ -22,7 +22,7 @@ export default class FileReader implements Filelike {
   }
 
   // open a file for reading
-  private async _open(): Promise<void> {
+  async #open(): Promise<void> {
     this._file = await fs.open(this._filename, "r");
     this._size = (await this._file.stat()).size;
   }
@@ -34,7 +34,7 @@ export default class FileReader implements Filelike {
   // read length (bytes) starting from offset (bytes)
   async read(offset: number, length: number): Promise<Uint8Array> {
     if (this._file == null) {
-      await this._open();
+      await this.#open();
       return await this.read(offset, length);
     }
 

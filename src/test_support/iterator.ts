@@ -26,14 +26,14 @@ export type FixtureOutput = {
 };
 
 export class FakeBagReader implements IBagReader {
-  private chunks: EnhancedChunkInfo[];
+  #chunks: EnhancedChunkInfo[];
 
   constructor(chunks: EnhancedChunkInfo[]) {
-    this.chunks = chunks;
+    this.#chunks = chunks;
   }
 
   async readChunk(chunkInfo: ChunkInfo): Promise<ChunkReadResult> {
-    const chunk = this.chunks[chunkInfo.chunkPosition];
+    const chunk = this.#chunks[chunkInfo.chunkPosition];
     if (!chunk) {
       throw new Error(`No chunk for position ${chunkInfo.chunkPosition}`);
     }
@@ -84,7 +84,7 @@ export class FakeBagReader implements IBagReader {
     fileOffset: number,
     cls: Constructor<T> & { opcode: number },
   ): T {
-    const chunk = this.chunks[fileOffset]!;
+    const chunk = this.#chunks[fileOffset]!;
     const message = chunk.messages[buffer[0]!]!;
 
     const out = new cls({

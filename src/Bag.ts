@@ -5,9 +5,9 @@
 // found in the LICENSE file in the root directory of this source tree.
 // You may not use this file except in compliance with the License.
 
-import { parse as parseMessageDefinition } from "@foxglove/rosmsg";
-import { MessageReader } from "@foxglove/rosmsg-serialization";
-import { compare, Time } from "@foxglove/rostime";
+import { parse as parseMessageDefinition } from "@lichtblick/rosmsg";
+import { MessageReader } from "@lichtblick/rosmsg-serialization";
+import { compare, Time } from "@lichtblick/rostime";
 
 import BagReader from "./BagReader";
 import { ForwardIterator } from "./ForwardIterator";
@@ -44,12 +44,12 @@ export default class Bag {
   startTime?: Time;
   endTime?: Time;
 
-  private bagOpt: BagOpt;
+  #bagOpt: BagOpt;
 
   constructor(filelike: Filelike, opt?: BagOpt) {
     this.reader = new BagReader(filelike);
     this.connections = new Map<number, Connection>();
-    this.bagOpt = opt ?? {};
+    this.#bagOpt = opt ?? {};
   }
 
   // if the bag is manually created with the constructor, you must call `await open()` on the bag
@@ -82,7 +82,7 @@ export default class Bag {
     const topics = opt?.topics;
 
     let parse: IteratorConstructorArgs["parse"] | undefined;
-    if (this.bagOpt.parse !== false) {
+    if (this.#bagOpt.parse !== false) {
       parse = (data, connection) => {
         // lazily create a reader for this connection if it doesn't exist
         connection.reader ??= new MessageReader(
@@ -93,7 +93,7 @@ export default class Bag {
     }
 
     if (opt?.reverse === true) {
-      const position = opt?.start ?? this.endTime;
+      const position = opt.start ?? this.endTime;
       if (!position) {
         throw new Error("no timestamp");
       }
@@ -104,7 +104,7 @@ export default class Bag {
         reader: this.reader,
         connections: this.connections,
         chunkInfos: this.chunkInfos,
-        decompress: this.bagOpt.decompress ?? {},
+        decompress: this.#bagOpt.decompress ?? {},
         parse,
       });
     } else {
@@ -119,7 +119,7 @@ export default class Bag {
         reader: this.reader,
         chunkInfos: this.chunkInfos,
         connections: this.connections,
-        decompress: this.bagOpt.decompress ?? {},
+        decompress: this.#bagOpt.decompress ?? {},
         parse,
       });
     }
@@ -193,7 +193,9 @@ export default class Bag {
         endTime,
         decompress,
       );
-      messages.forEach((msg) => callback(parseMsg(msg, i)));
+      messages.forEach((msg) => {
+        callback(parseMsg(msg, i));
+      });
     }
   }
 }

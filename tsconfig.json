@@ -1,5 +1,5 @@
 {
-  "extends": "@foxglove/tsconfig/base",
+  "extends": "@lichtblick/tsconfig/base",
   "include": ["./src/**/*", "./typings/*.d.ts", "*.d.ts"],
   "compilerOptions": {
     "rootDir": "./src",

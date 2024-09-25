@@ -5,16 +5,14 @@
 // found in the LICENSE file in the root directory of this source tree.
 // You may not use this file except in compliance with the License.
 
-import type { Time } from "@foxglove/rostime";
+import type { Time } from "@lichtblick/rostime";
 
 import type { IBagReader } from "./IBagReader";
 import type { Chunk, ChunkInfo, Connection, IndexData } from "./record";
 
 export type RawFields = { [k: string]: Uint8Array };
 
-export interface Constructor<T> {
-  new (fields: RawFields): T;
-}
+export type Constructor<T> = new (fields: RawFields) => T;
 
 export interface Filelike {
   read(offset: number, length: number): Promise<Uint8Array>;
